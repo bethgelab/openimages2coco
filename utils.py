@@ -11,12 +11,12 @@ import skimage.io as io
 from joblib import Parallel, delayed
 from openimages import OpenImages
 
-def _urlToLicense(licenses, mode='http'):
+def _url_to_license(licenses, mode='http'):
     # create dict with license urls as 
     # mode is either http or https
     
     # create dict
-    url_to_license = {}
+    licenses_by_url = {}
 
     for license in licenses:
         # Get URL
@@ -25,9 +25,9 @@ def _urlToLicense(licenses, mode='http'):
         else:
             url = license['url']
         # Add to dict
-        url_to_license[url] = license
+        licenses_by_url[url] = license
         
-    return url_to_license
+    return licenses_by_url
 
 def convert_category_annotations(orginal_category_info):
     
@@ -46,8 +46,8 @@ def convert_category_annotations(orginal_category_info):
 def _convert_image_annotation_chunk(original_image_metadata, image_dir, licenses, verbose=0):
     
     # Get dict with license urls
-    url_to_license_http = _urlToLicense(licenses, mode='http')
-    url_to_license_https = _urlToLicense(licenses, mode='https')
+    licenses_by_url_http = _url_to_license(licenses, mode='http')
+    licenses_by_url_https = _url_to_license(licenses, mode='https')
     #Create list
     images = []
     # Set starting time
@@ -82,9 +82,9 @@ def _convert_image_annotation_chunk(original_image_metadata, image_dir, licenses
         license_url = original_image_metadata[i][4]
         # Look up license id
         try:
-            img['license'] = url_to_license_https[license_url]['id']
+            img['license'] = licenses_by_url_https[license_url]['id']
         except:
-            img['license'] = url_to_license_http[license_url]['id']
+            img['license'] = licenses_by_url_http[license_url]['id']
 
         # Load image to extract height and width
         filename = os.path.join(image_dir, img['file_name'])
@@ -135,7 +135,7 @@ def convert_image_annotations(original_image_metadata, image_dir, licenses, mode
         
     return images
 
-def _imageListToDict(images):
+def _image_list_to_dict(images):
     # Helper function to create dict of images by image id 
     # modelled from the cocoapi
     imgs = {}
@@ -144,7 +144,7 @@ def _imageListToDict(images):
         
     return imgs
 
-def _categoryListToDict(categories):
+def _category_list_to_dict(categories):
     # Helper function to create dict of categories by integer category id
     # modelled from the cocoapi
     cats = {}
@@ -153,7 +153,7 @@ def _categoryListToDict(categories):
     
     return cats
 
-def _categoriesByOriginalIds(cats):
+def _categories_by_original_ids(cats):
     # Helperfunction to create dict mapping original utf8 category ids to categories
     origCats = {}
     for i in cats.keys():
@@ -164,9 +164,9 @@ def _categoriesByOriginalIds(cats):
 
 def convert_instance_annotations(original_annotations, images, categories, start_index=0):
     
-    imgs = _imageListToDict(images)
-    cats = _categoryListToDict(categories)
-    origCats = _categoriesByOriginalIds(cats)
+    imgs = _image_list_to_dict(images)
+    cats = _category_list_to_dict(categories)
+    orig_cats = _categories_by_original_ids(cats)
     
     annotations = []
 
@@ -185,7 +185,7 @@ def convert_instance_annotations(original_annotations, images, categories, start
         image_id = original_annotations[csv_line][0]
         ann['image_id'] = image_id
         ann['original_category_id'] = original_annotations[csv_line][2]
-        ann['category_id'] = origCats[original_annotations[csv_line][2]]['id']
+        ann['category_id'] = orig_cats[original_annotations[csv_line][2]]['id']
         x = float(original_annotations[csv_line][4]) * imgs[image_id]['width']
         y = float(original_annotations[csv_line][6]) * imgs[image_id]['height']
         dx = (float(original_annotations[csv_line][5]) - float(original_annotations[csv_line][4])) * imgs[image_id]['width']
