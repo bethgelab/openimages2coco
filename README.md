@@ -35,6 +35,7 @@ openimages = COCO('PATH_TO_OPENIMAGES/annotations/val-annotations-bbox.json')
 
 ### Issues
 - The evaluation tools from the Coco API are not yet working with the converted Open Images annotations
+- Te code is not yet formatted consistently because it was created as a mix of the cocoAPI code which features capital classes and CamelCase functions and custom code written in pep8.
 - A few images are in a weird format that returns a list [image, some_annotations] when loaded with skimage.io.imread(image). These seem to be corrupted .jpg files and we will contact the data set developers on this issue. For the moment something like the following function can be used to catch all possible formatting issues including RGBA and monochrome images:
 ```
 def load_image(self, image_id):
