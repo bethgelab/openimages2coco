@@ -69,7 +69,7 @@ def convert_image_annotations(original_image_metadata, original_image_annotation
         img['file_name'] = key + '.jpg'
         img['original_url'] = original_image_metadata[i][2]
         img['neg_category_ids'] = neg_img_lvl_anns.get(key, [])
-        img['not_exhaustive_category_ids'] = pos_img_lvl_anns.get(key, [])
+        img['pos_category_ids'] = pos_img_lvl_anns.get(key, [])
         license_url = original_image_metadata[i][4]
         # Look up license id
         try:
