@@ -20,7 +20,7 @@ Download Open Images from https://storage.googleapis.com/openimages/web/download
 
 Run conversion:
 ```
-ptyhon convert.py -p PATH_TO_OPENIMAGES
+python3 convert.py -p PATH_TO_OPENIMAGES
 ```
 
 ### Output
