@@ -29,32 +29,41 @@ for subset in ['val', 'test', 'train']:
     if subset == 'train':
         image_sourcefile = 'train-images-boxable-with-rotation.csv'
         annotation_sourcefile = 'train-annotations-bbox.csv'
+        image_label_sourcefile = 'train-annotations-human-imagelabels-boxable.csv'
     elif subset == 'val':
         image_sourcefile = 'validation-images-with-rotation.csv'
         annotation_sourcefile = 'validation-annotations-bbox.csv'
+        image_label_sourcefile = 'validation-annotations-human-imagelabels-boxable.csv'
     elif subset == 'test':
         image_sourcefile = 'test-images-with-rotation.csv'
         annotation_sourcefile = 'test-annotations-bbox.csv'
+        image_label_sourcefile = 'test-annotations-human-imagelabels-boxable.csv'
 
     # Load original annotations
     print('loading original annotations ...', end='\r')
-    with open(os.path.join(base_dir, 'annotations', category_sourcefile), 'r', encoding='utf-8') as f:
+    with open('{}/annotations/{}'.format(base_dir, category_sourcefile), 'r', encoding='utf-8') as f:
         csv_f = csv.reader(f)
         original_category_info = []
         for row in csv_f:
             original_category_info.append(row)
 
-    with open(os.path.join(base_dir, 'annotations', image_sourcefile), 'r', encoding='utf-8') as f:
+    with open('{}/annotations/{}'.format(base_dir, image_sourcefile), 'r', encoding='utf-8') as f:
         csv_f = csv.reader(f)
         original_image_metadata = []
         for row in csv_f:
             original_image_metadata.append(row)
 
-    with open(os.path.join(base_dir, 'annotations', annotation_sourcefile), 'r') as f:
+    with open('{}/annotations/{}'.format(base_dir, annotation_sourcefile), 'r') as f:
         csv_f = csv.reader(f)
         original_annotations = []
         for row in csv_f:
             original_annotations.append(row)
+
+    with open('{}/annotations/{}'.format(base_dir, image_label_sourcefile), 'r', encoding='utf-8') as f:
+        csv_f = csv.reader(f)
+        original_image_annotations = []
+        for row in csv_f:
+            original_image_annotations.append(row)
     print('loading original annotations ... Done')
 
     oi = {}
@@ -90,7 +99,8 @@ for subset in ['val', 'test', 'train']:
     # Convert image mnetadata
     print('converting image info ...')
     image_dir = os.path.join(base_dir, subset)
-    oi['images'] = utils.convert_image_annotations(original_image_metadata, image_dir, oi['licenses'])
+    oi['images'] = utils.convert_image_annotations(original_image_metadata, original_image_annotations,
+                                                   image_dir, oi['categories'], oi['licenses'])
 
     # Convert instance annotations
     print('converting annotations ...')

@@ -2,6 +2,7 @@ import os
 import imagesize
 
 from tqdm import tqdm
+from collections import defaultdict
 
 def _url_to_license(licenses, mode='http'):
     # create dict with license urls as 
@@ -35,11 +36,24 @@ def convert_category_annotations(orginal_category_info):
     
     return categories
 
-def convert_image_annotations(original_image_metadata, image_dir, licenses, verbose=1):
+def convert_image_annotations(original_image_metadata, original_image_annotations, image_dir, categories, licenses, verbose=1):
+    
+    cats_by_freebase_id = {cat['freebase_id']: cat for cat in categories}
     
     # Get dict with license urls
     licenses_by_url_http = _url_to_license(licenses, mode='http')
     licenses_by_url_https = _url_to_license(licenses, mode='https')
+    
+    # convert original image annotations to dict
+    pos_img_lvl_anns = defaultdict(list)
+    neg_img_lvl_anns = defaultdict(list)
+    for ann in original_image_annotations[1:]:
+        cat_of_ann = cats_by_freebase_id[ann[2]]['id']
+        if int(ann[3]) == 1:
+            pos_img_lvl_anns[ann[0]].append(cat_of_ann)
+        elif int(ann[3]) == 0:
+            neg_img_lvl_anns[ann[0]].append(cat_of_ann)
+    
     #Create list
     images = []
 
@@ -54,6 +68,8 @@ def convert_image_annotations(original_image_metadata, image_dir, licenses, verb
         img['id'] = key
         img['file_name'] = key + '.jpg'
         img['original_url'] = original_image_metadata[i][2]
+        img['neg_category_ids'] = neg_img_lvl_anns.get(key, [])
+        img['not_exhaustive_category_ids'] = pos_img_lvl_anns.get(key, [])
         license_url = original_image_metadata[i][4]
         # Look up license id
         try:
