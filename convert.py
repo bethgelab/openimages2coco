@@ -29,7 +29,10 @@ for subset in ['val', 'test', 'train']:
     if subset == 'train':
         image_sourcefile = 'train-images-boxable-with-rotation.csv'
         annotation_sourcefile = 'train-annotations-bbox.csv'
-        image_label_sourcefile = 'train-annotations-human-imagelabels-boxable.csv'
+        if args.version == 6:
+            annotation_sourcefile = 'oidv6-train-annotations-bbox.csv'
+        else:
+            image_label_sourcefile = 'train-annotations-human-imagelabels-boxable.csv'
     elif subset == 'val':
         image_sourcefile = 'validation-images-with-rotation.csv'
         annotation_sourcefile = 'validation-annotations-bbox.csv'

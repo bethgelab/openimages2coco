@@ -78,7 +78,12 @@ def convert_image_annotations(original_image_metadata, original_image_annotation
             img['license'] = licenses_by_url_http[license_url]['id']
 
         # Extract height and width
-        filename = os.path.join(image_dir, img['file_name'])
+        if not os.path.exists(image_dir):
+            filename = os.path.join(image_dir + "_"+img['file_name'][0].lower(), img['file_name'])
+        else:
+            filename = os.path.join(image_dir, img['file_name'])
+
+
         img['width'], img['height'] = imagesize.get(filename)
             
         # Add to list of images
