@@ -12,67 +12,96 @@ def parse_args():
     parser.add_argument('-p', '--path', dest='path',
                         help='path to openimages data', 
                         type=str)
-    parser.add_argument('--version', default=6, type=int, help='Open Images Version')
+    parser.add_argument('--version',
+                        default='v6',
+                        choices=['v4', 'v5', 'v6', 'challenge_2019'],
+                        type=str,
+                        help='Open Images Version')
+    parser.add_argument('--subsets',
+                        type=str,
+                        nargs='+',
+                        default=['val', 'train'],
+                        choices=['train', 'val', 'test'],
+                        help='subsets to convert')
     args = parser.parse_args()
     return args
 
 args = parse_args()
 base_dir = args.path
+if not isinstance(args.subsets, list):
+    args.subsets = [args.subsets]
 
-for subset in ['val', 'test', 'train']:
+for subset in args.subsets:
     # Convert annotations
-    version = args.version
     print('converting {} data'.format(subset))
-    
-    # Select correct source files for each subset
-    category_sourcefile = 'class-descriptions-boxable.csv'
-    if subset == 'train':
+
+    # Select correct source files for each subset        
+    if subset == 'train' and args.version != 'challenge_2019':
+        category_sourcefile = 'class-descriptions-boxable.csv'
         image_sourcefile = 'train-images-boxable-with-rotation.csv'
-        annotation_sourcefile = 'train-annotations-bbox.csv'
-        if args.version == 6:
+        if args.version == 'v6':
             annotation_sourcefile = 'oidv6-train-annotations-bbox.csv'
         else:
-            image_label_sourcefile = 'train-annotations-human-imagelabels-boxable.csv'
+            annotation_sourcefile = 'train-annotations-bbox.csv'
+        image_label_sourcefile = 'train-annotations-human-imagelabels-boxable.csv'
         image_size_sourcefile = 'train_sizes-00000-of-00001.csv'
-    elif subset == 'val':
+
+    elif subset == 'val' and args.version != 'challenge_2019':
+        category_sourcefile = 'class-descriptions-boxable.csv'
         image_sourcefile = 'validation-images-with-rotation.csv'
         annotation_sourcefile = 'validation-annotations-bbox.csv'
         image_label_sourcefile = 'validation-annotations-human-imagelabels-boxable.csv'
         image_size_sourcefile = 'validation_sizes-00000-of-00001.csv'
-    elif subset == 'test':
+
+    elif subset == 'test' and args.version != 'challenge_2019':
+        category_sourcefile = 'class-descriptions-boxable.csv'
         image_sourcefile = 'test-images-with-rotation.csv'
         annotation_sourcefile = 'test-annotations-bbox.csv'
         image_label_sourcefile = 'test-annotations-human-imagelabels-boxable.csv'
         image_size_sourcefile = None
 
+    elif subset == 'train' and args.version == 'challenge_2019':
+        category_sourcefile = 'challenge-2019-classes-description-500.csv'
+        image_sourcefile = 'train-images-boxable-with-rotation.csv'
+        annotation_sourcefile = 'challenge-2019-train-detection-bbox.csv'
+        image_label_sourcefile = 'challenge-2019-train-detection-human-imagelabels.csv'
+        image_size_sourcefile = 'train_sizes-00000-of-00001.csv'
+
+    elif subset == 'val' and args.version == 'challenge_2019':
+        category_sourcefile = 'challenge-2019-classes-description-500.csv'
+        image_sourcefile = 'validation-images-with-rotation.csv'
+        annotation_sourcefile = 'challenge-2019-validation-detection-bbox.csv'
+        image_label_sourcefile = 'challenge-2019-validation-detection-human-imagelabels.csv'
+        image_size_sourcefile = 'validation_sizes-00000-of-00001.csv'
+
     # Load original annotations
     print('loading original annotations ...', end='\r')
-    with open('{}/annotations/{}'.format(base_dir, category_sourcefile), 'r', encoding='utf-8') as f:
+    with open(os.path.join(base_dir, 'annotations/', category_sourcefile), 'r', encoding='utf-8') as f:
         csv_f = csv.reader(f)
         original_category_info = []
         for row in csv_f:
             original_category_info.append(row)
 
-    with open('{}/annotations/{}'.format(base_dir, image_sourcefile), 'r', encoding='utf-8') as f:
+    with open(os.path.join(base_dir, 'annotations/', image_sourcefile), 'r', encoding='utf-8') as f:
         csv_f = csv.reader(f)
         original_image_metadata = []
         for row in csv_f:
             original_image_metadata.append(row)
 
-    with open('{}/annotations/{}'.format(base_dir, annotation_sourcefile), 'r') as f:
+    with open(os.path.join(base_dir, 'annotations/', annotation_sourcefile), 'r') as f:
         csv_f = csv.reader(f)
         original_annotations = []
         for row in csv_f:
             original_annotations.append(row)
 
-    with open('{}/annotations/{}'.format(base_dir, image_label_sourcefile), 'r', encoding='utf-8') as f:
+    with open(os.path.join(base_dir, 'annotations/', image_label_sourcefile), 'r', encoding='utf-8') as f:
         csv_f = csv.reader(f)
         original_image_annotations = []
         for row in csv_f:
             original_image_annotations.append(row)
 
     if image_size_sourcefile:       
-        with open('data/{}'.format(image_size_sourcefile), 'r', encoding='utf-8') as f:
+        with open(os.path.join('data/', image_size_sourcefile), 'r', encoding='utf-8') as f:
             csv_f = csv.reader(f)
             original_image_sizes = []
             for row in csv_f:
@@ -91,9 +120,9 @@ for subset in ['val', 'test', 'train']:
                   Stefan Popov, Matteo Malloci, Sami Abu-El-Haija, Rodrigo Benenson,\
                   Jordi Pont-Tuset, Chen Sun, Kevin Murphy, Jake Walker, Andreas Veit,\
                   Serge Belongie, Abhinav Gupta, Dhyanesh Narayanan, Gal Chechik',
-                  'description': 'Open Images Dataset v{}'.format(version),
+                  'description': 'Open Images Dataset {}'.format(args.version),
                   'url': 'https://storage.googleapis.com/openimages/web/index.html',
-                  'version': '{:.1f}'.format(version),
+                  'version': '{}'.format(args.version),
                   'year': 2020}
 
     # Add license information
@@ -114,15 +143,14 @@ for subset in ['val', 'test', 'train']:
     # Convert image mnetadata
     print('converting image info ...')
     image_dir = os.path.join(base_dir, subset)
-    oi['images'] = utils.convert_image_annotations(original_image_metadata, original_image_annotations, original_image_sizes,
-                                                   image_dir, oi['categories'], oi['licenses'])
+    oi['images'] = utils.convert_image_annotations(original_image_metadata, original_image_annotations, original_image_sizes, image_dir, oi['categories'], oi['licenses'])
 
     # Convert instance annotations
     print('converting annotations ...')
     oi['annotations'] = utils.convert_instance_annotations(original_annotations, oi['images'], oi['categories'], start_index=0)
 
     # Write annotations into .json file
-    filename = os.path.join(base_dir, 'annotations', 'openimages_v{:d}_{}_bbox.json'.format(version, subset))
+    filename = os.path.join(base_dir, 'annotations/', 'openimages_{}_{}_bbox.json'.format(args.version, subset))
     print('writing output to {}'.format(filename))
     json.dump(oi,  open(filename, "w"))
     print('Done')

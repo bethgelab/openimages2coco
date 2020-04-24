@@ -15,13 +15,22 @@ make install
 ```
 
 Download Open Images from https://storage.googleapis.com/openimages/web/download.html \
--> Store the images in three folders called: ```train, val and test``` \
--> Store the annotations for all three splits in a separate folder called: ```annotations```
+-> Store the images in three folders called: `train, val and test` \
+-> Store the annotations for all three splits in a separate folder called: `annotations`
 
 Run conversion:
 ```
 python3 convert.py -p PATH_TO_OPENIMAGES
 ```
+
+The toolkit now supports multiple versions of the dataset including `v4`, `v5`, `v6` and `challenge_2019`.
+For example `challenge_2019` can be chose like:
+```
+python3 convert.py -p PATH_TO_OPENIMAGES --version challenge_2019
+```
+
+Note, that different annotation files have to be downloaded to `annotations` for this purpose.
+The files for the `challenge_2019` set can be found here: https://storage.googleapis.com/openimages/web/challenge2019_downloads.html
 
 ### Output
 
@@ -30,7 +39,7 @@ The generated annotations can be loaded and used with the standard MS Coco tools
 from pycocotools.coco import COCO
 
 # Example for the validation set
-openimages = COCO('PATH_TO_OPENIMAGES/annotations/val-annotations-bbox.json')
+openimages = COCO('PATH_TO_OPENIMAGES/annotations/openimages_v6_val_bbox.json')
 ```
 
 ### Issues
