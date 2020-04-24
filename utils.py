@@ -36,9 +36,20 @@ def convert_category_annotations(orginal_category_info):
     
     return categories
 
-def convert_image_annotations(original_image_metadata, original_image_annotations, image_dir, categories, licenses, verbose=1):
+def convert_image_annotations(original_image_metadata,
+                              original_image_annotations,
+                              original_image_sizes,
+                              image_dir,
+                              categories,
+                              licenses):
     
     cats_by_freebase_id = {cat['freebase_id']: cat for cat in categories}
+    
+    # Get dict with image sizes
+    if original_image_sizes:
+        image_size_dict = {x[0]:  [int(x[1]), int(x[2])] for x in original_image_sizes[1:]}
+    else:
+        image_size_dict = {}
     
     # Get dict with license urls
     licenses_by_url_http = _url_to_license(licenses, mode='http')
@@ -78,13 +89,16 @@ def convert_image_annotations(original_image_metadata, original_image_annotation
             img['license'] = licenses_by_url_http[license_url]['id']
 
         # Extract height and width
-        if not os.path.exists(image_dir):
-            filename = os.path.join(image_dir + "_"+img['file_name'][0].lower(), img['file_name'])
+        # Extract height and width
+        image_size = image_size_dict.get(key, None)
+        if image_size is not None:
+            img['width'], img['height'] = image_size
         else:
-            filename = os.path.join(image_dir, img['file_name'])
-
-
-        img['width'], img['height'] = imagesize.get(filename)
+            if not os.path.exists(image_dir):
+                filename = os.path.join(image_dir + "_"+img['file_name'][0].lower(), img['file_name'])
+            else:
+                filename = os.path.join(image_dir, img['file_name'])
+            img['width'], img['height'] = imagesize.get(filename)
             
         # Add to list of images
         images.append(img)

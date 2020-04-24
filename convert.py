@@ -33,14 +33,17 @@ for subset in ['val', 'test', 'train']:
             annotation_sourcefile = 'oidv6-train-annotations-bbox.csv'
         else:
             image_label_sourcefile = 'train-annotations-human-imagelabels-boxable.csv'
+        image_size_sourcefile = 'train_sizes-00000-of-00001.csv'
     elif subset == 'val':
         image_sourcefile = 'validation-images-with-rotation.csv'
         annotation_sourcefile = 'validation-annotations-bbox.csv'
         image_label_sourcefile = 'validation-annotations-human-imagelabels-boxable.csv'
+        image_size_sourcefile = 'validation_sizes-00000-of-00001.csv'
     elif subset == 'test':
         image_sourcefile = 'test-images-with-rotation.csv'
         annotation_sourcefile = 'test-annotations-bbox.csv'
         image_label_sourcefile = 'test-annotations-human-imagelabels-boxable.csv'
+        image_size_sourcefile = None
 
     # Load original annotations
     print('loading original annotations ...', end='\r')
@@ -67,6 +70,15 @@ for subset in ['val', 'test', 'train']:
         original_image_annotations = []
         for row in csv_f:
             original_image_annotations.append(row)
+
+    if image_size_sourcefile:       
+        with open('data/{}'.format(image_size_sourcefile), 'r', encoding='utf-8') as f:
+            csv_f = csv.reader(f)
+            original_image_sizes = []
+            for row in csv_f:
+                original_image_sizes.append(row)
+    else:
+        original_image_sizes = None
     print('loading original annotations ... Done')
 
     oi = {}
@@ -102,7 +114,7 @@ for subset in ['val', 'test', 'train']:
     # Convert image mnetadata
     print('converting image info ...')
     image_dir = os.path.join(base_dir, subset)
-    oi['images'] = utils.convert_image_annotations(original_image_metadata, original_image_annotations,
+    oi['images'] = utils.convert_image_annotations(original_image_metadata, original_image_annotations, original_image_sizes,
                                                    image_dir, oi['categories'], oi['licenses'])
 
     # Convert instance annotations
