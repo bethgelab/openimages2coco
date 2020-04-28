@@ -1,8 +1,25 @@
 import os
+import csv
+import warnings
 import imagesize
+
+import numpy as np
+import skimage.io as io
 
 from tqdm import tqdm
 from collections import defaultdict
+
+def csvread(file):
+    if file:       
+        with open(file, 'r', encoding='utf-8') as f:
+            csv_f = csv.reader(f)
+            data = []
+            for row in csv_f:
+                data.append(row)
+    else:
+        data = None
+        
+    return data
 
 def _url_to_license(licenses, mode='http'):
     # create dict with license urls as 
@@ -152,6 +169,116 @@ def convert_instance_annotations(original_annotations, images, categories, start
         for attribute in annotated_attributes:
             ann[attribute.lower()] = int(original_annotations_dict[csv_line][attribute])
 
+        annotations.append(ann)
+        
+    return annotations
+
+
+def _id_to_rgb(array):
+    B = array // 256**2
+    rest = array % 256**2
+    G = rest // 256
+    R = rest % 256
+    return np.stack([R, G, B], axis=-1).astype('uint8')
+
+def _get_mask_file(segment, mask_dir):
+    name = "{}_{}_{}.png".format(
+        segment["ImageID"], segment["LabelName"].replace('/',''), segment["BoxID"])
+    return os.path.join(mask_dir, name)
+
+def _combine_small_on_top(masks):
+    combined = np.zeros(shape=masks[0].shape, dtype='uint32')
+    sizes = [np.sum(m != 0) for m in masks]
+    for idx in np.argsort(sizes)[::-1]:
+        mask = masks[idx]
+        combined[mask != 0] = mask[mask != 0]
+    return combined
+
+def _greedy_combine(masks):
+    combined = np.zeros(shape=masks[0].shape, dtype='uint32')
+    for maks in maksk:
+        combined[mask != 0] = mask[mask != 0]
+    return combined
+
+
+def convert_segmentation_annotations(original_segmentations, images, categories, original_mask_dir, segmentation_out_dir, start_index=0):
+
+    original_segmentations_dict = _list_to_dict(original_segmentations)
+    
+    if not os.path.isdir(segmentation_out_dir):
+        os.mkdir(segmentation_out_dir)
+
+    image_ids = list(np.unique([ann['ImageID'] for ann in original_segmentations_dict]))
+    filtered_images = [img for img in images if img['id'] in image_ids]
+
+    imgs = {img['id']: img for img in filtered_images}
+    cats = {cat['id']: cat for cat in categories}
+    cats_by_freebase_id = {cat['freebase_id']: cat for cat in categories}
+
+    for i in range(len(original_segmentations_dict)):
+        original_segmentations_dict[i]["SegmentID"] = i + 1
+
+    img_segment_map = defaultdict(list)
+    for segment in original_segmentations_dict:
+        img_segment_map[segment["ImageID"]].append(segment)
+
+    annotations = []
+    segment_index = 0 + start_index
+    for img in tqdm(filtered_images, mininterval=0.5):
+        ann = dict()
+        ann['file_name'] = img['file_name']
+        ann['image_id'] = img['id']
+        ann['segments_info'] = []
+        masks = []
+        for segment in img_segment_map[img['id']]:
+            # collect mask
+            mask_file = _get_mask_file(segment, original_mask_dir)
+            mask = io.imread(mask_file)# load png
+            mask = mask // 255 # set to [0,1]
+            mask = mask * segment["SegmentID"]
+            masks.append(mask)
+
+            # collect segment info
+            segment_info = {}
+            # Compute bbox coordinates
+            xmin = float(segment['BoxXMin']) * img['width']
+            ymin = float(segment['BoxYMin']) * img['height']
+            xmax = float(segment['BoxXMax']) * img['width']
+            ymax = float(segment['BoxYMax']) * img['height']
+            dx = xmax - xmin
+            dy = ymax - ymin
+            # Fill in annotations
+            segment_info['bbox'] = [round(a, 2) for a in [xmin , ymin, dx, dy]]
+            segment_info['area'] = round(dx * dy, 2)
+            segment_info['category_id'] = cats_by_freebase_id[segment['LabelName']],
+            segment_info['id'] = segment_index
+            segment_index += 1 
+            # append
+            ann['segments_info'].append(segment_info)
+
+        
+        # combined_binary_mask = sum(masks)
+        # Looks like many masks overlap
+        # currently managed by greedy combining
+        combined_binary_mask = _combine_small_on_top(masks)
+        # check if masks overlap. If they do we have a problem
+        ids_in_mask = len(np.unique(combined_binary_mask[combined_binary_mask != 0]))
+        num_segments = len(img_segment_map[img['id']])
+        if ids_in_mask != num_segments:
+            print("Overlapping masks in image {}".format(ann['image_id']))
+            values_in_output = np.unique(combined_binary_mask[combined_binary_mask != 0])
+            ids_in_segments = [segment["SegmentID"] for segment in img_segment_map[img['id']]]
+            not_in_segments = [x for x in values_in_output if x in ids_in_segments]
+            not_in_values = [x for x in ids_in_segments if x in values_in_output]
+            print("Not in segments: {}".format(not_in_segments))
+            print("Not in pixel values: {}".format(not_in_values))
+
+        combined_rgb_mask = _id_to_rgb(combined_binary_mask)
+        out_file = os.path.join(segmentation_out_dir, "{}.png".format(ann['image_id']))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            io.imsave(out_file, combined_rgb_mask)
+    
         annotations.append(ann)
         
     return annotations

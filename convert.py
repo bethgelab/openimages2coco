@@ -23,6 +23,11 @@ def parse_args():
                         default=['val', 'train'],
                         choices=['train', 'val', 'test'],
                         help='subsets to convert')
+    parser.add_argument('--task',
+                        type=str,
+                        default='bbox',
+                        choices=['bbox', 'panoptic'],
+                        help='type of annotations')
     args = parser.parse_args()
     return args
 
@@ -45,6 +50,8 @@ for subset in args.subsets:
             annotation_sourcefile = 'train-annotations-bbox.csv'
         image_label_sourcefile = 'train-annotations-human-imagelabels-boxable.csv'
         image_size_sourcefile = 'train_sizes-00000-of-00001.csv'
+        segmentation_sourcefile = 'validation-annotations-object-segmentation.csv'
+        segmentation_folder = 'annotations/validation_masks/'
 
     elif subset == 'val' and args.version != 'challenge_2019':
         category_sourcefile = 'class-descriptions-boxable.csv'
@@ -52,6 +59,8 @@ for subset in args.subsets:
         annotation_sourcefile = 'validation-annotations-bbox.csv'
         image_label_sourcefile = 'validation-annotations-human-imagelabels-boxable.csv'
         image_size_sourcefile = 'validation_sizes-00000-of-00001.csv'
+        segmentation_sourcefile = 'validation-annotations-object-segmentation.csv'
+        segmentation_folder = 'annotations/validation_masks/'
 
     elif subset == 'test' and args.version != 'challenge_2019':
         category_sourcefile = 'class-descriptions-boxable.csv'
@@ -66,6 +75,8 @@ for subset in args.subsets:
         annotation_sourcefile = 'challenge-2019-train-detection-bbox.csv'
         image_label_sourcefile = 'challenge-2019-train-detection-human-imagelabels.csv'
         image_size_sourcefile = 'train_sizes-00000-of-00001.csv'
+        segmentation_sourcefile = 'challenge-2019-train-segmentation-masks.csv'
+        segmentation_folder = 'annotations/challenge_2019_train_masks/'
 
     elif subset == 'val' and args.version == 'challenge_2019':
         category_sourcefile = 'challenge-2019-classes-description-500.csv'
@@ -73,41 +84,22 @@ for subset in args.subsets:
         annotation_sourcefile = 'challenge-2019-validation-detection-bbox.csv'
         image_label_sourcefile = 'challenge-2019-validation-detection-human-imagelabels.csv'
         image_size_sourcefile = 'validation_sizes-00000-of-00001.csv'
+        segmentation_sourcefile = 'challenge-2019-validation-segmentation-masks.csv'
+        segmentation_folder = 'annotations/challenge_2019_validation_masks/'
 
     # Load original annotations
     print('loading original annotations ...', end='\r')
-    with open(os.path.join(base_dir, 'annotations/', category_sourcefile), 'r', encoding='utf-8') as f:
-        csv_f = csv.reader(f)
-        original_category_info = []
-        for row in csv_f:
-            original_category_info.append(row)
-
-    with open(os.path.join(base_dir, 'annotations/', image_sourcefile), 'r', encoding='utf-8') as f:
-        csv_f = csv.reader(f)
-        original_image_metadata = []
-        for row in csv_f:
-            original_image_metadata.append(row)
-
-    with open(os.path.join(base_dir, 'annotations/', annotation_sourcefile), 'r') as f:
-        csv_f = csv.reader(f)
-        original_annotations = []
-        for row in csv_f:
-            original_annotations.append(row)
-
-    with open(os.path.join(base_dir, 'annotations/', image_label_sourcefile), 'r', encoding='utf-8') as f:
-        csv_f = csv.reader(f)
-        original_image_annotations = []
-        for row in csv_f:
-            original_image_annotations.append(row)
-
-    if image_size_sourcefile:       
-        with open(os.path.join('data/', image_size_sourcefile), 'r', encoding='utf-8') as f:
-            csv_f = csv.reader(f)
-            original_image_sizes = []
-            for row in csv_f:
-                original_image_sizes.append(row)
-    else:
-        original_image_sizes = None
+    original_category_info = utils.csvread(os.path.join(base_dir, 'annotations', category_sourcefile))
+    original_image_metadata = utils.csvread(os.path.join(base_dir, 'annotations', image_sourcefile))
+    original_image_annotations = utils.csvread(os.path.join(base_dir, 'annotations', image_label_sourcefile))
+    original_image_sizes = utils.csvread(os.path.join('data/', image_size_sourcefile))
+    if args.task == 'bbox':
+        original_annotations = utils.csvread(os.path.join(base_dir, 'annotations', annotation_sourcefile))
+    elif args.task == 'panoptic':
+        original_segmentations = utils.csvread(os.path.join(base_dir, 'annotations', segmentation_sourcefile))
+        original_mask_dir = os.path.join(base_dir, segmentation_folder)
+        segmentation_out_dir = os.path.join(base_dir, 'annotations/{}_{}_{}/'.format(args.task, subset, args.version))
+        
     print('loading original annotations ... Done')
 
     oi = {}
@@ -147,10 +139,14 @@ for subset in args.subsets:
 
     # Convert instance annotations
     print('converting annotations ...')
-    oi['annotations'] = utils.convert_instance_annotations(original_annotations, oi['images'], oi['categories'], start_index=0)
+    # Convert annotations
+    if args.task == 'bbox':
+        oi['annotations'] = utils.convert_instance_annotations(original_annotations, oi['images'], oi['categories'], start_index=0)
+    elif args.task in['segm', 'panoptic']:
+        oi['annotations'] = utils.convert_segmentation_annotations(original_segmentations, oi['images'], oi['categories'], original_mask_dir, segmentation_out_dir, start_index=0)
 
     # Write annotations into .json file
-    filename = os.path.join(base_dir, 'annotations/', 'openimages_{}_{}_bbox.json'.format(args.version, subset))
+    filename = os.path.join(base_dir, 'annotations/', 'openimages_{}_{}_{}.json'.format(args.version, subset, args.task))
     print('writing output to {}'.format(filename))
     json.dump(oi,  open(filename, "w"))
     print('Done')

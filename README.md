@@ -18,15 +18,30 @@ Download Open Images from https://storage.googleapis.com/openimages/web/download
 -> Store the images in three folders called: `train, val and test` \
 -> Store the annotations for all three splits in a separate folder called: `annotations`
 
-Run conversion:
+Run conversion of bounding box annotstions:
 ```
-python3 convert.py -p PATH_TO_OPENIMAGES
+python3 convert.py -p PATH_TO_OPENIMAGES --task bbox
 ```
 
-The toolkit now supports multiple versions of the dataset including `v4`, `v5`, `v6` and `challenge_2019`.
-For example `challenge_2019` can be chose like:
+The convert instance masks to the [Coco panoptic format](http://cocodataset.org/#panoptic-2019).
+The masks have to be placed in `annotations/$SPLIT_masks/`
 ```
-python3 convert.py -p PATH_TO_OPENIMAGES --version challenge_2019
+python3 convert.py -p PATH_TO_OPENIMAGES --task panoptic
+```
+
+We currently don't support adding the instance masks to the annotations as done for coco becasue the resulting `json` file would be extremely large.
+
+
+### Challenge 2019
+
+The toolkit supports multiple versions of the dataset including `v4`, `v5`, `v6` and `challenge_2019`.
+For example the `bbox` annotations of `challenge_2019` can be converted like:
+```
+python3 convert.py -p PATH_TO_OPENIMAGES --version challenge_2019 --task bbox
+```
+For panoptica nnotations the masks have to be placed in `annotations/challenge_2019_$SPLIT_masks/` before running:
+```
+python3 convert.py -p PATH_TO_OPENIMAGES --version challenge_2019 --task panoptic
 ```
 
 Note, that different annotation files have to be downloaded to `annotations` for this purpose.
