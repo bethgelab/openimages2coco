@@ -142,8 +142,9 @@ for subset in args.subsets:
     # Convert annotations
     if args.task == 'bbox':
         oi['annotations'] = utils.convert_instance_annotations(original_annotations, oi['images'], oi['categories'], start_index=0)
-    elif args.task in['segm', 'panoptic']:
+    elif args.task == 'panoptic':
         oi['annotations'] = utils.convert_segmentation_annotations(original_segmentations, oi['images'], oi['categories'], original_mask_dir, segmentation_out_dir, start_index=0)
+        oi['images'] = utils.filter_images(oi['images'], oi['annotations'])
 
     # Write annotations into .json file
     filename = os.path.join(base_dir, 'annotations/', 'openimages_{}_{}_{}.json'.format(args.version, subset, args.task))

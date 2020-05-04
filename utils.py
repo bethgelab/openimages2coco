@@ -268,10 +268,12 @@ def convert_segmentation_annotations(original_segmentations, images, categories,
             print("Overlapping masks in image {}".format(ann['image_id']))
             values_in_output = np.unique(combined_binary_mask[combined_binary_mask != 0])
             ids_in_segments = [segment["SegmentID"] for segment in img_segment_map[img['id']]]
-            not_in_segments = [x for x in values_in_output if x in ids_in_segments]
-            not_in_values = [x for x in ids_in_segments if x in values_in_output]
+            not_in_segments = [x for x in values_in_output if x not in ids_in_segments]
+            not_in_values = [x for x in ids_in_segments if x not in values_in_output]
             print("Not in segments: {}".format(not_in_segments))
             print("Not in pixel values: {}".format(not_in_values))
+            # don't include the annotation into the output
+            continue
 
         combined_rgb_mask = _id_to_rgb(combined_binary_mask)
         out_file = os.path.join(segmentation_out_dir, "{}.png".format(ann['image_id']))
@@ -282,3 +284,10 @@ def convert_segmentation_annotations(original_segmentations, images, categories,
         annotations.append(ann)
         
     return annotations
+
+
+def filter_images(images, annotations):
+    image_ids = list(np.unique([ann['image_id'] for ann in annotations]))
+    filtered_images = [img for img in images if img['id'] in image_ids]
+    return filtered_images
+    
