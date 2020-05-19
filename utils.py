@@ -234,6 +234,9 @@ def convert_segmentation_annotations(original_segmentations, images, categories,
             # collect mask
             mask_file = _get_mask_file(segment, original_mask_dir)
             mask = io.imread(mask_file)# load png
+            # exclude empty masks
+            if np.max(mask) == 0:
+                continue
             mask = mask // 255 # set to [0,1]
             mask = mask * segment["SegmentID"]
             masks.append(mask)
