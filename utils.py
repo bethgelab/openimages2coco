@@ -156,6 +156,7 @@ def convert_instance_annotations(original_annotations, images, categories, start
         ann['image_id'] = image_id
         ann['freebase_id'] = original_annotations_dict[csv_line]['LabelName']
         ann['category_id'] = cats_by_freebase_id[ann['freebase_id']]['id']
+        ann['iscrowd'] = False
         
         xmin = float(original_annotations_dict[csv_line]['XMin']) * imgs[image_id]['width']
         ymin = float(original_annotations_dict[csv_line]['YMin']) * imgs[image_id]['height']
