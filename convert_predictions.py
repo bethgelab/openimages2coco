@@ -68,7 +68,7 @@ for pred in tqdm(predictions, desc='Converting predictions '):
     
     conf = pred['score']
     
-    img_pred_map[image_id].append(f"{cat} {conf:.2f} {xmin:.2f} {ymin:.2f} {xmax:.2f} {ymax:.2f}")
+    img_pred_map[image_id].append(f"{cat} {conf:.4f} {xmin:.4f} {ymin:.4f} {xmax:.4f} {ymax:.4f}")
     
     
 # collect into per image strings
