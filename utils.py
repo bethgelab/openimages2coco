@@ -21,6 +21,12 @@ def csvread(file):
         
     return data
 
+def csvwrite(data, file):
+    with open(file, 'w', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        for d in data:
+            writer.writerow(d)
+
 def _url_to_license(licenses, mode='http'):
     # create dict with license urls as 
     # mode is either http or https
