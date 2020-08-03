@@ -43,8 +43,6 @@ print('loading predictions ... Done')
 if args.subset:
     image_size_sourcefile = 'data/{}_sizes-00000-of-00001.csv'.format(args.subset)
     original_image_sizes = utils.csvread(image_size_sourcefile)
-
-if original_image_sizes:
     image_size_dict = {x[0]:  [int(x[1]), int(x[2])] for x in original_image_sizes[1:]}
 else:
     image_size_dict = {}
