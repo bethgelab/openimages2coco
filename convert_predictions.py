@@ -34,7 +34,7 @@ def parse_args():
 
 args = parse_args()
 
-assert args.subset or args.image_dir "provide either a split to get image sized from data/ or the directory where the images are stored"
+assert args.subset or args.image_dir, "provide either a split to get image sized from data/ or the directory where the images are stored"
 
 print('loading predictions')
 predictions = json.load(open(args.predictions))
