@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument('--subset',
                         type=str,
                         default=None,
-                        choices=['train', 'validation', 'test'],
+                        choices=['train', 'validation', 'test-rvc2020'],
                         help='subsets to convert')
     parser.add_argument('--task',
                         type=str,
